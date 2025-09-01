@@ -1,7 +1,6 @@
-package com.typer.auth.domain.models
+package com.typer.compete.domain.models
 
 import com.typer.core.serialization.ObjectIdSerializer
-import com.typer.create_contest.domain.models.ParticipantModel
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -9,24 +8,25 @@ import org.bson.Document
 import org.bson.types.ObjectId
 
 @Serializable
-data class UserModel(
+data class ContestCardModel(
     @SerialName("_id")
     @Serializable(with = ObjectIdSerializer::class)
-    val id: ObjectId? = null,
-    val firebaseId: String? = null,
-    val name: String = "Anonymous",
-    val email: String = "abc@example.com",
-    val photoUrl: String = "",
+    val id: ObjectId,
+    val title: String,
+    val authorName: String,
+    val contestCode: String,
+    val status: String,
+    val tags: List<String>,
+    val time: Int,
+    val currentPlayers: Int,
+    val totalPlayers: Int,
+    val isMine: Boolean
 ) {
     fun toDocument(): Document {
         val jsonString = Json.encodeToString(this)
         val document = Document.parse(jsonString)
 
-        if (id != null) {
-            document["_id"] = id
-        } else {
-            document.remove("_id")
-        }
+        document["_id"] = id
 
         return document
     }
@@ -36,7 +36,7 @@ data class UserModel(
             ignoreUnknownKeys = true
         }
 
-        fun fromDocument(document: Document): UserModel {
+        fun fromDocument(document: Document): ContestCardModel {
             val mutableDoc = Document(document)
             document["_id"]?.let { objectId ->
                 if (objectId is ObjectId) {
@@ -49,19 +49,3 @@ data class UserModel(
     }
 }
 
-fun UserModel.toUserResponseModel(): UserResponseModel {
-    return UserResponseModel(
-        id = id?.toHexString(),
-        name = name,
-        email = email,
-        photoUrl = photoUrl,
-    )
-}
-
-fun UserModel.toParticipantModel(isCreator: Boolean = false): ParticipantModel {
-    return ParticipantModel(
-        userId = firebaseId!!,
-        userName = name,
-        isCreator = isCreator
-    )
-}

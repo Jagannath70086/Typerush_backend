@@ -25,7 +25,7 @@ fun Route.userRoutes() {
                 val firebaseUser = call.principal<FirebaseUser>()!!
                 val res = repository.findOrInsert(firebaseUser.toUser())
                 if (res is Either.Right) {
-                    call.respond(res.value.toUserResponseModel())
+                    call.respond(res.value)
                 } else {
                     call.respond(HttpStatusCode.Unauthorized,
                         mapOf("error" to "Unauthorized")
@@ -36,7 +36,7 @@ fun Route.userRoutes() {
                 val firebaseUser = call.principal<FirebaseUser>()!!
                 val res = repository.findByFirebaseId(firebaseUser.uid)
                 if (res is Either.Right) {
-                    call.respond(res.value.toUserResponseModel())
+                    call.respond(res.value)
                 } else {
                     call.respond(HttpStatusCode.Unauthorized,
                         mapOf("error" to "Unauthorized")
