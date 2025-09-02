@@ -12,6 +12,22 @@ application {
     mainClass.set("com.typer.ApplicationKt")
 }
 
+tasks.jar {
+    archiveBaseName.set("typerushbackend")
+    archiveVersion.set("0.0.1")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.typer.ApplicationKt"
+        )
+    }
+
+    from(configurations.runtimeClasspath.get().map {
+        if (it.isDirectory) it else zipTree(it)
+    })
+}
+
 dependencies {
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
