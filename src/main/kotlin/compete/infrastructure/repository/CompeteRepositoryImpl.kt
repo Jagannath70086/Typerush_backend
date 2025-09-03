@@ -4,6 +4,7 @@ import com.mongodb.client.MongoDatabase
 import com.mongodb.client.model.Filters
 import com.typer.auth.domain.repository.UserRepository
 import com.typer.compete.domain.models.ContestCardModel
+import com.typer.compete.domain.models.SubmissionModel
 import com.typer.compete.domain.repository.CompeteRepository
 import com.typer.core.either.Either
 import com.typer.core.failure.Failure
@@ -14,6 +15,7 @@ import com.typer.create_contest.domain.models.toContestCardModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.bson.Document
+import org.bson.types.ObjectId
 
 class CompeteRepositoryImpl(
     mongoDatabase: MongoDatabase,
@@ -90,6 +92,31 @@ class CompeteRepositoryImpl(
 
         } catch (e: Exception) {
             return@withContext Either.Left(ServerFailure("Failed to check contest"))
+        }
+    }
+
+    override suspend fun finishContest(submissionModel: SubmissionModel): Either<Failure, Unit> {
+        try {
+            val res = collection.find(Filters.eq("_id", ObjectId(submissionModel.contestId))).first()
+            if (res == null) {
+                return Either.Left(ServerFailure("Contest not found"))
+            }
+            val contest = ContestModel.fromDocument(res)
+            val newContest = contest.copy(players = contest.players.map {
+                if (it.userId == submissionModel.userId) {
+                    it.copy(wpm = submissionModel.wpm, accuracy = submissionModel.accuracy, hasFinished = true)
+                } else {
+                    it
+                }
+            })
+            val updateDoc = Document("\$set", newContest.toDocument(includeId = false))
+            val updateRes = collection.updateOne(Filters.eq("_id", contest.id), updateDoc)
+            if (updateRes.wasAcknowledged()) {
+                return Either.Right(Unit)
+            }
+            return Either.Left(ServerFailure("Failed to finish contest"))
+        } catch (e: Exception) {
+            return Either.Left(ServerFailure("Failed to finish contest${e.message}"))
         }
     }
 }

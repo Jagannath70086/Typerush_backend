@@ -26,7 +26,7 @@ class WaitingRepositoryImpl(
     }
     private val collection = mongoDatabase.getCollection(CONTEST_COLLECTION)
 
-    override suspend fun startContest(contestId: ObjectId, userId: String): Either<Failure, Unit> = withContext(Dispatchers.IO) {
+    override suspend fun startContest(contestId: ObjectId, userId: String): Either<Failure, ContestModel> = withContext(Dispatchers.IO) {
         try {
             val res = collection.find(Filters.eq("_id", contestId)).first()
             if (res == null) {
@@ -40,12 +40,12 @@ class WaitingRepositoryImpl(
                 return@withContext Either.Left(AuthFailure("User is not the host"))
             }
 
-            val updatedContest = contest.copy(status = "Started")
+            val updatedContest = contest.copy(status = "finished")
 
             val updateDoc = Document("\$set", updatedContest.toDocument(includeId = false))
             val updateRes = collection.updateOne(Filters.eq("_id", contest.id), updateDoc)
             if (updateRes.wasAcknowledged()) {
-                return@withContext Either.Right(Unit)
+                return@withContext Either.Right(updatedContest)
             }
             return@withContext Either.Left(ServerFailure("Failed to join contest"))
         } catch (e: Exception) {

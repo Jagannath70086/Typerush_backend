@@ -1,6 +1,7 @@
 package com.typer.compete.handlers
 
 import com.typer.compete.domain.models.ContestCardModel
+import com.typer.compete.domain.models.SubmissionModel
 import com.typer.compete.domain.repository.CompeteRepository
 import com.typer.core.either.Either
 import com.typer.create_contest.domain.models.ContestModel
@@ -38,7 +39,7 @@ class CompeteHandler(
             }
         }
     }
-    override fun supportedTypes(): List<String> = listOf("getContests", "joiningContestWithCode", "contestInfoFromCode")
+    override fun supportedTypes(): List<String> = listOf("getContests", "joiningContestWithCode", "contestInfoFromCode", "contestFinished")
 
     override suspend fun handle(
         session: WebSocketSession,
@@ -50,6 +51,7 @@ class CompeteHandler(
                 "getContests" -> handleGetContests(session, userId)
                 "joiningContestWithCode" -> handleJoiningContestWithCode(session, userId, message)
                 "contestInfoFromCode" -> handleContestInfoFromCode(session, message)
+                "contestFinished" -> handleContestFinished(session, message)
             }
         } catch (e: Exception) {
             bus.publish(WebsocketEvent.SendError(session, "Invalid message format"))
@@ -124,6 +126,22 @@ class CompeteHandler(
                 ContestCardModel.serializer(), contestCard)))
         } catch (e: Exception) {
             bus.publish(WebsocketEvent.SendError(session, "Failed to send contest to owner: ${e.message}"))
+        }
+    }
+
+    private suspend fun handleContestFinished(session: WebSocketSession, message: WebsocketMessage) {
+        try {
+            val submissionModel = json.decodeFromJsonElement(SubmissionModel.serializer(), message.data!!)
+            val res = repository.finishContest(submissionModel)
+            when (res) {
+                is Either.Left -> bus.publish(WebsocketEvent.SendError(session, res.error.message))
+                is Either.Right -> {
+                    bus.publish(WebsocketEvent.SendSuccess(session, "contestFinishedSuccess", null))
+                    bus.publish(WebsocketEvent.Broadcast("userFinishedContest", json.encodeToJsonElement(submissionModel.userId)))
+                }
+            }
+        } catch (e: Exception) {
+            bus.publish(WebsocketEvent.SendError(session, "Failed to finish contest ${e.message}"))
         }
     }
 }

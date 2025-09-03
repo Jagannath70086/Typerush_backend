@@ -4,6 +4,8 @@ import com.typer.compete.domain.models.ContestCardModel
 import com.typer.core.either.Either
 import com.typer.create_contest.domain.models.ContestModel
 import com.typer.create_contest.domain.models.toContestCardModel
+import com.typer.create_contest.domain.models.toGameInfoModel
+import com.typer.waiting.domain.models.GameInfoModel
 import com.typer.waiting.domain.repository.WaitingRepository
 import com.typer.websocket.WebSocketHandler
 import com.typer.websocket.WebsocketEvent
@@ -51,7 +53,10 @@ class WaitingHandler(
             val contestIdAsObjectId = ObjectId(contestId)
             val res = repository.startContest(contestIdAsObjectId, userId)
             if (res is Either.Right) {
-                bus.publish(WebsocketEvent.Broadcast( "contestStartSuccess", null))
+                bus.publish(WebsocketEvent.Broadcast( "contestStartSuccess", json.encodeToJsonElement(
+                    GameInfoModel.serializer(),
+                    res.value.toGameInfoModel()
+                )))
             } else if (res is Either.Left) {
                 bus.publish(WebsocketEvent.SendError(session, res.error.message))
             }

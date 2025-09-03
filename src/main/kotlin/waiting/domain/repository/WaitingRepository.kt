@@ -7,5 +7,5 @@ import com.typer.create_contest.domain.models.ContestModel
 import org.bson.types.ObjectId
 
 interface WaitingRepository {
-    suspend fun startContest(contestId: ObjectId, userId: String): Either<Failure, Unit>
+    suspend fun startContest(contestId: ObjectId, userId: String): Either<Failure, ContestModel>
 }

@@ -2,6 +2,7 @@ package com.typer.create_contest.domain.models
 
 import com.typer.compete.domain.models.ContestCardModel
 import com.typer.core.serialization.ObjectIdSerializer
+import com.typer.waiting.domain.models.GameInfoModel
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -69,5 +70,13 @@ fun ContestModel.toContestCardModel(userId: String): ContestCardModel{
         currentPlayers = players.size,
         totalPlayers = maxPlayers,
         isMine = players.find { it.isCreator }?.userId == userId
+    )
+}
+
+fun ContestModel.toGameInfoModel(): GameInfoModel{
+    return GameInfoModel(
+        id = id?.toHexString(),
+        text = textSnippet,
+        time = duration.toLong()
     )
 }
